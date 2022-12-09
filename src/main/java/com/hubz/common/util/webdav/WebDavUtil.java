@@ -522,10 +522,10 @@ public final class WebDavUtil {
             // 检查路径是否存在
             Boolean pathExist = checkPathExist(basePath, path);
             if (!pathExist) {
-                StaticLog.warn("【{}】路径不存在", path);
+                StaticLog.warn("【{}/{}】路径不存在", basePath, path);
                 return Collections.emptyList();
             } else {
-                StaticLog.warn("【{}】路径存在", path);
+                StaticLog.info("【{}/{}】路径存在", basePath, path);
                 String encodePath = URLEncoder.encode(path, StandardCharsets.UTF_8).replace("+", "%20");
                 String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodePath);
                 StaticLog.info("获取路径【{}】下的文件/目录信息", dealUrl(url));
