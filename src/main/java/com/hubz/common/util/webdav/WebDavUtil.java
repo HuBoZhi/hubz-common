@@ -186,7 +186,7 @@ public final class WebDavUtil {
      **/
     public static Boolean uploadFilesFromPath(String basePath, String sourcePath, String targetPath) {
         check(basePath);
-        return uploadFilesFromPath("", sourcePath, targetPath);
+        return uploadFilesFromPath(basePath, "", sourcePath, targetPath);
     }
 
     /**
