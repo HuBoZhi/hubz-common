@@ -106,8 +106,7 @@ public final class WebDavUtil {
                 if (StrUtil.isNotBlank(dirName)) {
                     toCreatePath.append("/").append(dirName);
                     // 处理路径
-                    String encodeToCreatePath = URLEncoder.encode(toCreatePath.toString(), StandardCharsets.UTF_8)
-                            .replace("+", "%20").replace("%2F", "/");
+                    String encodeToCreatePath = encodeFilePath(toCreatePath.toString());
                     StaticLog.info("开始创建目录【{}】", encodeToCreatePath);
                     if (!checkPathExist(basePath, encodeToCreatePath)) {
                         String createDirUrl = dealUrl(StrUtil.format("{}/{}", baseUrl, encodeToCreatePath));
@@ -157,8 +156,7 @@ public final class WebDavUtil {
             }
             Path targetFilePath = Path.of(targetPath, Path.of(sourceFilePath).getFileName().toString());
             StaticLog.info("开始上传指定文件【{}】到WebDav目录【{}】", sourceFilePath, targetFilePath);
-            String encodeTargetFilePath = URLEncoder.encode(targetFilePath.toString().replace("\\", "/"), StandardCharsets.UTF_8)
-                    .replace("+", "%20");
+            String encodeTargetFilePath = encodeFilePath(targetFilePath.toString());
             // 不忽略远端文件：需要检查是否存在     >>>>>   如果忽略远端文件则不需要检查是否存在
             if (Boolean.FALSE.equals(ignoreExistFile)) {
                 // 检查远端文件是否存在
@@ -272,7 +270,7 @@ public final class WebDavUtil {
             }
             filePath = Paths.get(basePath, filePath).toString();
 
-            String encodeFilePath = URLEncoder.encode(filePath, StandardCharsets.UTF_8).replace("+", "%20");
+            String encodeFilePath = encodeFilePath(filePath);
             String url = StrUtil.format("{}/{}", WEB_DAV_URL, encodeFilePath);
             httpResponse = HTTP_REQUEST_CLIENT.doDelete(dealUrl(url), null);
             ThreadUtil.sleep(500);
@@ -308,7 +306,7 @@ public final class WebDavUtil {
                 return true;
             }
             String filePath = Paths.get(basePath, deletePath).toString();
-            String encodeFilePath = URLEncoder.encode(filePath, StandardCharsets.UTF_8).replace("+", "%20");
+            String encodeFilePath = encodeFilePath(filePath);
             String url = StrUtil.format("{}/{}", WEB_DAV_URL, encodeFilePath);
             httpResponse = HTTP_REQUEST_CLIENT.doDelete(dealUrl(url), null);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
@@ -341,7 +339,7 @@ public final class WebDavUtil {
         try {
             sourceDir = Paths.get(basePath, sourceDir).toString();
             StaticLog.info("获取WebDav目录【{}】中文件【{}】的内容", sourceDir, fileName);
-            String encodeFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+            String encodeFileName = encodeFilePath(fileName);
             String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, sourceDir, encodeFileName);
             httpResponse = HTTP_REQUEST_CLIENT.doGetHttpResponse(dealUrl(url));
             String fileBodyStr = EntityUtils.toString(httpResponse.getEntity(), StandardCharsets.UTF_8);
@@ -394,7 +392,7 @@ public final class WebDavUtil {
                 // 不需要备份就清空旧数据
                 FileUtil.del(targetFilePath);
             }
-            String encodeFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+            String encodeFileName = encodeFilePath(fileName);
             String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, sourceDir, encodeFileName);
             httpResponse = HTTP_REQUEST_CLIENT.doGetHttpResponse(dealUrl(url));
             ThreadUtil.sleep(500);
@@ -455,7 +453,7 @@ public final class WebDavUtil {
                 Files.createDirectories(targetFileParentPath);
             }
 
-            String encodeFilePath = URLEncoder.encode(webDavSourceFilePath, StandardCharsets.UTF_8).replace("+", "%20");
+            String encodeFilePath = encodeFilePath(webDavSourceFilePath);
             String url = StrUtil.format("{}/{}", WEB_DAV_URL, encodeFilePath);
             StaticLog.info("开始下载WebDav远端【{}】的文件", dealUrl(url));
             httpResponse = HTTP_REQUEST_CLIENT.doGetHttpResponse(dealUrl(url));
@@ -487,16 +485,18 @@ public final class WebDavUtil {
         check(basePath);
         HttpResponse httpResponse = null;
         try {
-            String encodePath = URLEncoder.encode(path.replace("\\", "/"), StandardCharsets.UTF_8)
-                    .replace("+", "%20");
+            String encodePath = encodeFilePath(path);
             String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodePath);
-            StaticLog.info("开始检查路径【{}】是否存在", dealUrl(url));
-            httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, dealUrl(url));
+            String hasDealUrl = dealUrl(url);
+            StaticLog.info("开始检查路径【{}】是否存在", hasDealUrl);
+            httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, hasDealUrl);
             ThreadUtil.sleep(500);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
             if (WebDavConstant.NOT_FOUND_STATUS_CODE.equals(statusCode)) {
+                StaticLog.info("路径【{}】不存在", hasDealUrl);
                 return false;
             } else {
+                StaticLog.info("路径【{}】存在", hasDealUrl);
                 return WebDavConstant.FOUND_STATUS_CODE.equals(statusCode);
             }
         } catch (Exception e) {
@@ -507,23 +507,6 @@ public final class WebDavUtil {
                 EntityUtils.consumeQuietly(httpResponse.getEntity());
             }
         }
-    }
-
-    /**
-     * 处理URL
-     * @author hubz
-     * @date 2022/7/30 19:51
-     *
-     * @param url url
-     * @return java.lang.String 处理后的url
-     **/
-    private static String dealUrl(String url) {
-        return "https://" + url.replace("%2F", "/")
-                .replace("https://", "")
-                .replaceAll("%5C", "/")
-                .replaceAll("//", "/")
-                .replace("\\", "/")
-                .replaceAll("\\\\", "/");
     }
 
     /**
@@ -546,7 +529,7 @@ public final class WebDavUtil {
                 return Collections.emptyList();
             } else {
                 StaticLog.info("【{}/{}】路径存在", basePath, path);
-                String encodePath = URLEncoder.encode(path, StandardCharsets.UTF_8).replace("+", "%20");
+                String encodePath = encodeFilePath(path);
                 String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodePath);
                 StaticLog.info("获取路径【{}】下的文件/目录信息", dealUrl(url));
                 httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, dealUrl(url));
@@ -612,5 +595,47 @@ public final class WebDavUtil {
         return Collections.emptyList();
     }
 
+    /**
+     * 处理URL
+     * @author hubz
+     * @date 2022/7/30 19:51
+     *
+     * @param url url
+     * @return java.lang.String 处理后的url
+     **/
+    private static String dealUrl(String url) {
+        return "https://" + dealPath(url);
+    }
+
+    /**
+     * 处理路径
+     * @author hubz
+     * @date 2022/12/10 15:22
+     *
+     * @param path 路径
+     * @return java.lang.String
+     **/
+    private static String dealPath(String path) {
+        return path.replace("%2F", "/")
+                .replace("https://", "")
+                .replaceAll("%5C", "/")
+                .replaceAll("//", "/")
+                .replace("\\", "/")
+                .replaceAll("\\\\", "/");
+    }
+
+    /**
+     * 编码文件路径
+     * @author hubz
+     * @date 2022/12/10 15:21
+     *
+     * @param path 文件路径
+     * @return java.lang.String 处理后的文件路径
+     **/
+    private static String encodeFilePath(String path) {
+        return URLEncoder.encode(dealPath(path), StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("%2F", "/");
+    }
 
 }
