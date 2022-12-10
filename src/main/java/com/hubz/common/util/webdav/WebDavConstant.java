@@ -27,4 +27,9 @@ public final class WebDavConstant {
     public static final Integer NOT_FOUND_STATUS_CODE = 404;
     public static final Integer FOUND_STATUS_CODE = 207;
 
+    /**
+     * 失败状态码前缀
+     */
+    public static final String CODE_40 = "40";
+
 }

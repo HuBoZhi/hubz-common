@@ -142,7 +142,7 @@ public final class WebDavUtil {
      * @param sourceFilePath 源文件路径
      * @param targetPath 目标上传路径
      * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则更新
+     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
      *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
@@ -195,7 +195,7 @@ public final class WebDavUtil {
      * @param sourcePath 待上传的文件/目录路径
      * @param targetPath WebDav目标路径
      * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则更新
+     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
      *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
@@ -214,7 +214,7 @@ public final class WebDavUtil {
      * @param sourcePath 待上传的文件/目录路径
      * @param targetPath WebDav目标路径
      * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则更新
+     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
      *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
@@ -492,7 +492,7 @@ public final class WebDavUtil {
             httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, hasDealUrl);
             ThreadUtil.sleep(500);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (WebDavConstant.NOT_FOUND_STATUS_CODE.equals(statusCode)) {
+            if (String.valueOf(statusCode).startsWith(WebDavConstant.CODE_40)) {
                 StaticLog.info("路径【{}】不存在", hasDealUrl);
                 return false;
             } else {
