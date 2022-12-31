@@ -19,11 +19,12 @@
         <!-- 依赖版本 -->
         <lombok.version>1.18.24</lombok.version>
         <guava.version>31.1-jre</guava.version>
-        <hutool.version>5.8.10</hutool.version>
-        <httpclient.version>4.5.13</httpclient.version>
+        <hutool.version>5.8.11</hutool.version>
+        <httpclient.version>4.5.14</httpclient.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <jgit.version>6.1.0.202203080745-r</jgit.version>
+        <jgit.version>6.4.0.202211300538-r</jgit.version>
+        <commons-codec.version>1.15</commons-codec.version>
     </properties>
 
     <dependencies>
@@ -44,6 +45,17 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
         </dependency>
 
         <dependency>
