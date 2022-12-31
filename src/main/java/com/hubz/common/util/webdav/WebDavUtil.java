@@ -508,7 +508,7 @@ public final class WebDavUtil {
         check(basePath);
         HttpResponse httpResponse = null;
         try {
-            StaticLog.info("获取WebDav路径【{}/{}】下的文件/目录列表",  basePath, path);
+            StaticLog.info("获取WebDav路径【{}/{}】下的文件/目录列表", basePath, path);
             // 检查路径是否存在
             Boolean pathExist = checkPathExist(basePath, path);
             if (!pathExist) {
