@@ -142,12 +142,9 @@ public final class WebDavUtil {
      * @param basePath 根目录
      * @param sourceFilePath 源文件路径
      * @param targetPath 目标上传路径
-     * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
-     *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
-    public static Boolean uploadFile(String basePath, String sourceFilePath, String targetPath, Boolean ignoreExistFile) {
+    public static Boolean uploadFile(String basePath, String sourceFilePath, String targetPath) {
         check(basePath);
         HttpResponse httpResponse = null;
         try {
@@ -158,17 +155,7 @@ public final class WebDavUtil {
             Path targetFilePath = Path.of(targetPath, Path.of(sourceFilePath).getFileName().toString());
             StaticLog.info("开始上传指定文件【{}】到WebDav目录【{}】", sourceFilePath, targetFilePath);
             String encodeTargetFilePath = encodeFilePath(targetFilePath.toString());
-            // 不忽略远端文件：需要检查是否存在     >>>>>   如果忽略远端文件则不需要检查是否存在
-            if (Boolean.FALSE.equals(ignoreExistFile)) {
-                // 检查远端文件是否存在
-                boolean fileExist = checkPathExist(basePath, encodeTargetFilePath);
-                // 不忽略远端文件+远端文件存在：终止本次上传
-                if (Boolean.TRUE.equals(fileExist)) {
-                    StaticLog.debug("上传指定文件【{}】到WebDav目录【{}】完成：文件已存在", sourceFilePath, targetFilePath);
-                    return true;
-                }
-            }
-            // 忽略远端文件/远端文件不存在：正常上传
+
             String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodeTargetFilePath);
             File file = new File(sourceFilePath);
             HttpEntity entity = new FileEntity(file);
@@ -195,14 +182,11 @@ public final class WebDavUtil {
      * @param basePath 根目录
      * @param sourcePath 待上传的文件/目录路径
      * @param targetPath WebDav目标路径
-     * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
-     *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
-    public static Boolean uploadFilesFromPath(String basePath, String sourcePath, String targetPath, Boolean ignoreExistFile) {
+    public static Boolean uploadFilesFromPath(String basePath, String sourcePath, String targetPath) {
         check(basePath);
-        return uploadFilesFromPath(basePath, "", sourcePath, targetPath, ignoreExistFile);
+        return uploadFilesFromPath(basePath, "", sourcePath, targetPath);
     }
 
     /**
@@ -214,12 +198,9 @@ public final class WebDavUtil {
      * @param fileBasePath 文件上级目录
      * @param sourcePath 待上传的文件/目录路径
      * @param targetPath WebDav目标路径
-     * @param ignoreExistFile 是否忽略远端已存在的文件
-     *                        true：忽略，继续上传，由远端自动处理，一致则忽略，不一致则备份旧的，上传新的
-     *                        false：不忽略，中止本次上传
      * @return java.lang.Boolean
      **/
-    private static Boolean uploadFilesFromPath(String basePath, String fileBasePath, String sourcePath, String targetPath, Boolean ignoreExistFile) {
+    private static Boolean uploadFilesFromPath(String basePath, String fileBasePath, String sourcePath, String targetPath) {
         check(basePath);
         Path path = Paths.get(sourcePath);
         if (StrUtil.isNotBlank(fileBasePath)) {
@@ -232,10 +213,10 @@ public final class WebDavUtil {
             StaticLog.info("开始上传目录【{}】至【{}】", path, targetPath);
             Files.list(path).forEach(item -> {
                 if (Files.isDirectory(item)) {
-                    uploadFilesFromPath(basePath, finalFileBasePath, item.toString(), targetPath, ignoreExistFile);
+                    uploadFilesFromPath(basePath, finalFileBasePath, item.toString(), targetPath);
                 } else if (Files.isRegularFile(item)) {
                     String filePath = item.toAbsolutePath().toString();
-                    Boolean uploadResult = uploadFile(basePath, filePath, targetPath + "/" + finalFileBasePath, ignoreExistFile);
+                    Boolean uploadResult = uploadFile(basePath, filePath, targetPath + "/" + finalFileBasePath);
                     if (uploadResult) {
                         StaticLog.debug("文件【{}】上传成功", filePath);
                     } else {
