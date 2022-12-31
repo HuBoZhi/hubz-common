@@ -99,6 +99,7 @@ public final class WebDavUtil {
     public static Boolean createDir(String basePath, String dir) {
         check(basePath);
         try {
+            StaticLog.info("创建目录【{}】", dir);
             String[] dirNames = dir.split("/");
             String baseUrl = StrUtil.format("{}/{}", WEB_DAV_URL, basePath);
             StringBuilder toCreatePath = new StringBuilder();
@@ -107,10 +108,10 @@ public final class WebDavUtil {
                     toCreatePath.append("/").append(dirName);
                     // 处理路径
                     String encodeToCreatePath = encodeFilePath(toCreatePath.toString());
-                    StaticLog.info("开始创建目录【{}】", encodeToCreatePath);
+                    StaticLog.debug("开始创建目录【{}】", encodeToCreatePath);
                     if (!checkPathExist(basePath, encodeToCreatePath)) {
                         String createDirUrl = dealUrl(StrUtil.format("{}/{}", baseUrl, encodeToCreatePath));
-                        StaticLog.info("创建目录URL：{}", createDirUrl);
+                        StaticLog.debug("创建目录URL：{}", createDirUrl);
                         HttpResponse httpResponse = null;
                         try {
                             httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_MKCOL, createDirUrl);
@@ -163,7 +164,7 @@ public final class WebDavUtil {
                 boolean fileExist = checkPathExist(basePath, encodeTargetFilePath);
                 // 不忽略远端文件+远端文件存在：终止本次上传
                 if (Boolean.TRUE.equals(fileExist)) {
-                    StaticLog.info("上传指定文件【{}】到WebDav目录【{}】完成：文件已存在", sourceFilePath, targetFilePath);
+                    StaticLog.debug("上传指定文件【{}】到WebDav目录【{}】完成：文件已存在", sourceFilePath, targetFilePath);
                     return true;
                 }
             }
@@ -174,7 +175,7 @@ public final class WebDavUtil {
             httpResponse = HTTP_REQUEST_CLIENT.doPut(dealUrl(url), entity);
             ThreadUtil.sleep(500);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
-            StaticLog.info("上传指定文件【{}】到WebDav目录【{}】完成：请求响应状态码【{}】", sourceFilePath, targetFilePath, statusCode);
+            StaticLog.debug("上传指定文件【{}】到WebDav目录【{}】完成：请求响应状态码【{}】", sourceFilePath, targetFilePath, statusCode);
             return WebDavConstant.WEBDAV_SUCCESS.equals(statusCode) || WebDavConstant.WEBDAV_SUCCESS_2.equals(statusCode);
         } catch (Exception e) {
             e.printStackTrace();
@@ -228,14 +229,15 @@ public final class WebDavUtil {
         }
         String finalFileBasePath = fileBasePath;
         try {
+            StaticLog.info("开始上传目录【{}】至【{}】", path, targetPath);
             Files.list(path).forEach(item -> {
                 if (Files.isDirectory(item)) {
-                    uploadFilesFromPath(finalFileBasePath, item.toString(), targetPath, ignoreExistFile);
+                    uploadFilesFromPath(basePath, finalFileBasePath, item.toString(), targetPath, ignoreExistFile);
                 } else if (Files.isRegularFile(item)) {
                     String filePath = item.toAbsolutePath().toString();
                     Boolean uploadResult = uploadFile(basePath, filePath, targetPath + "/" + finalFileBasePath, ignoreExistFile);
                     if (uploadResult) {
-                        StaticLog.info("文件【{}】上传成功", filePath);
+                        StaticLog.debug("文件【{}】上传成功", filePath);
                     } else {
                         StaticLog.error("文件【{}】上传失败", filePath);
                     }
@@ -265,7 +267,7 @@ public final class WebDavUtil {
             StaticLog.info("删除WebDav目录【{}】中指定文件【{}】", sourceDir, fileName);
             String filePath = StrUtil.format("{}/{}", sourceDir, fileName);
             if (Boolean.FALSE.equals(checkPathExist(basePath, filePath))) {
-                StaticLog.info("文件【{}】不存在，不需要删除", filePath);
+                StaticLog.warn("文件【{}】不存在，不需要删除", filePath);
                 return true;
             }
             filePath = Paths.get(basePath, filePath).toString();
@@ -275,7 +277,7 @@ public final class WebDavUtil {
             httpResponse = HTTP_REQUEST_CLIENT.doDelete(dealUrl(url), null);
             ThreadUtil.sleep(500);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
-            StaticLog.info("删除WebDav目录【{}】中指定文件【{}】完成：请求响应状态码【{}】", sourceDir, fileName, statusCode);
+            StaticLog.debug("删除WebDav目录【{}】中指定文件【{}】完成：请求响应状态码【{}】", sourceDir, fileName, statusCode);
             return WebDavConstant.REQUEST_OK.equals(statusCode) || WebDavConstant.WEBDAV_SUCCESS.equals(statusCode) || WebDavConstant.WEBDAV_SUCCESS_2.equals(statusCode);
         } catch (Exception e) {
             StaticLog.error(e, StrUtil.format("删除WebDav目录【{}】中指定文件【{}】文件失败", sourceDir, fileName));
@@ -302,7 +304,7 @@ public final class WebDavUtil {
         try {
             StaticLog.info("删除WebDav目录【{}】", deletePath);
             if (Boolean.FALSE.equals(checkPathExist(basePath, deletePath))) {
-                StaticLog.info("目录【{}】不存在，不需要删除", deletePath);
+                StaticLog.warn("目录【{}】不存在，不需要删除", deletePath);
                 return true;
             }
             String filePath = Paths.get(basePath, deletePath).toString();
@@ -310,7 +312,7 @@ public final class WebDavUtil {
             String url = StrUtil.format("{}/{}", WEB_DAV_URL, encodeFilePath);
             httpResponse = HTTP_REQUEST_CLIENT.doDelete(dealUrl(url), null);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
-            StaticLog.info("删除WebDav目录【{}】完成：请求响应状态码【{}】", deletePath, statusCode);
+            StaticLog.debug("删除WebDav目录【{}】完成：请求响应状态码【{}】", deletePath, statusCode);
             return WebDavConstant.REQUEST_OK.equals(statusCode) || WebDavConstant.WEBDAV_SUCCESS.equals(statusCode) || WebDavConstant.WEBDAV_SUCCESS_2.equals(statusCode);
         } catch (Exception e) {
             StaticLog.error(e, StrUtil.format("删除WebDav目录【{}】失败", deletePath));
@@ -375,6 +377,7 @@ public final class WebDavUtil {
         try {
             sourceDir = Paths.get(basePath, sourceDir).toString();
             String targetFilePath = Paths.get(targetPath, fileName).toAbsolutePath().toString();
+            StaticLog.info("下载WebDav文件【{}】至本地路径【{}】", sourceDir, targetFilePath);
             if (needBak) {
                 if (FileUtil.exist(targetFilePath)) {
                     StaticLog.warn("目标文件已存在,备份中...");
@@ -426,7 +429,9 @@ public final class WebDavUtil {
         HttpResponse httpResponse = null;
         try {
             webDavSourceFilePath = Paths.get(basePath, webDavSourceFilePath).toString();
-            String targetFilePath = Paths.get(targetFilePathStr).toAbsolutePath().toString();
+            Path targetFileBasePath = Paths.get(targetFilePathStr);
+            String targetFilePath = targetFileBasePath.toAbsolutePath().toString();
+            StaticLog.info("下载WebDav文件【{}】至本地路径【{}】", webDavSourceFilePath, targetFilePath);
             if (needBak) {
                 if (FileUtil.exist(targetFilePath)) {
                     StaticLog.warn("目标文件【{}】已存在,备份中...", targetFilePath);
@@ -435,7 +440,7 @@ public final class WebDavUtil {
                         return false;
                     }
                     // 创建备份目录
-                    String fileName = Paths.get(targetFilePathStr).getName(Paths.get(targetFilePathStr).getNameCount() - 1).toString();
+                    String fileName = targetFileBasePath.getName(targetFileBasePath.getNameCount() - 1).toString();
                     Path fileBakPath = Paths.get(bakPath, fileName + ".bak." + TimeUtils.getCurrentLongTime());
                     PathUtil.mkParentDirs(fileBakPath);
                     // 将文件移动到备份目录中
@@ -455,7 +460,7 @@ public final class WebDavUtil {
 
             String encodeFilePath = encodeFilePath(webDavSourceFilePath);
             String url = StrUtil.format("{}/{}", WEB_DAV_URL, encodeFilePath);
-            StaticLog.info("开始下载WebDav远端【{}】的文件", dealUrl(url));
+            StaticLog.debug("开始下载WebDav远端【{}】的文件", dealUrl(url));
             httpResponse = HTTP_REQUEST_CLIENT.doGetHttpResponse(dealUrl(url));
             try (OutputStream outputStream = new FileOutputStream(targetFilePath)) {
                 httpResponse.getEntity().writeTo(outputStream);
@@ -488,15 +493,15 @@ public final class WebDavUtil {
             String encodePath = encodeFilePath(path);
             String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodePath);
             String hasDealUrl = dealUrl(url);
-            StaticLog.info("开始检查路径【{}】是否存在", hasDealUrl);
+            StaticLog.info("检查路径【{}】是否存在", hasDealUrl);
             httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, hasDealUrl);
             ThreadUtil.sleep(500);
             int statusCode = httpResponse.getStatusLine().getStatusCode();
             if (String.valueOf(statusCode).startsWith(WebDavConstant.CODE_40)) {
-                StaticLog.info("路径【{}】不存在", hasDealUrl);
+                StaticLog.warn("路径【{}】不存在", hasDealUrl);
                 return false;
             } else {
-                StaticLog.info("路径【{}】存在", hasDealUrl);
+                StaticLog.debug("路径【{}】存在", hasDealUrl);
                 return WebDavConstant.FOUND_STATUS_CODE.equals(statusCode);
             }
         } catch (Exception e) {
@@ -522,16 +527,17 @@ public final class WebDavUtil {
         check(basePath);
         HttpResponse httpResponse = null;
         try {
+            StaticLog.info("获取WebDav路径【{}/{}】下的文件/目录列表",  basePath, path);
             // 检查路径是否存在
             Boolean pathExist = checkPathExist(basePath, path);
             if (!pathExist) {
                 StaticLog.warn("【{}/{}】路径不存在", basePath, path);
                 return Collections.emptyList();
             } else {
-                StaticLog.info("【{}/{}】路径存在", basePath, path);
+                StaticLog.debug("【{}/{}】路径存在", basePath, path);
                 String encodePath = encodeFilePath(path);
                 String url = StrUtil.format("{}/{}/{}", WEB_DAV_URL, basePath, encodePath);
-                StaticLog.info("获取路径【{}】下的文件/目录信息", dealUrl(url));
+                StaticLog.debug("获取路径【{}】下的文件/目录信息", dealUrl(url));
                 httpResponse = HTTP_REQUEST_CLIENT.execute(WebDavConstant.HTTP_METHOD_PROPFIND, dealUrl(url));
                 String responseBodyStr = EntityUtils.toString(httpResponse.getEntity(), StandardCharsets.UTF_8);
                 return parseWebDavResponseXML(path, responseBodyStr);
