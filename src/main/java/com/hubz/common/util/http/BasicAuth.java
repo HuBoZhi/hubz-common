@@ -25,7 +25,7 @@ public class BasicAuth implements Auth {
         String auth = String.format("%s:%s", this.username, this.password);
 
         byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.ISO_8859_1));
-        return "Basic " + new String(encodedAuth);
+        return "Basic " + new String(encodedAuth,StandardCharsets.UTF_8);
     }
 
     /**

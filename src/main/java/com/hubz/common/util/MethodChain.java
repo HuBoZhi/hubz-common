@@ -9,7 +9,6 @@ import java.util.function.Supplier;
  * @author hubz
  * @date 2022/5/7 14:32
  **/
-@Data
 public class MethodChain<R> {
     /**
      * 将要执行的方法
